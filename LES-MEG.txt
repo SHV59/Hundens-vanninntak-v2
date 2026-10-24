@@ -1,0 +1,10 @@
+Hundens vanninntak PWA – versjon 5
+
+Endringer:
+- Knappen «Legg til skål» gir tydelig tilbakemelding og setter fokus på den nye skålens navn.
+- Oppdatert service worker til nettverk-først, med ny cache-versjon.
+- Appskriptet har versjonsparameter for å redusere risiko for gamle filer.
+
+Publiser hele mappen på samme HTTPS-adresse som før. Åpne appen på nytt mens du er på nett for å hente oppdateringen. Om en gammel installasjon fortsatt brukes, lukk appen helt og åpne den igjen. Ikke slett nettstedsdata uten å eksportere CSV først.
+
+Automatiserte tester: Chromium med skrivebord-, Pixel 7- og iPhone 13-profiler. Ikke fysisk Android-/iOS-test og ikke ekte Safari/WebKit-test.
