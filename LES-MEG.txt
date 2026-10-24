@@ -1,1 +1,4 @@
-Versjon 6. Last opp index.html, app.js, sw.js, manifest.webmanifest og icon.svg til roten av GitHub-prosjektet. Eksporter CSV som sikkerhetskopi før oppdatering. Tidligere registreringer beholdes i samme nettleser og på samme nettadresse. Gram: 1,250 og 1 250 tolkes som 1250 gram.
+Hundens vanninntak PWA v6.1
+Last opp ALLE filene i rotmappen på GitHub Pages og erstatt eksisterende filer.
+Nyhet: velg vannmengde (ml) eller totalvekt (g) ved oppstart, vannbytte, etterfylling og ny måleperiode.
+Eksisterende lokal lagring beholdes på samme nettadresse. Ta CSV-sikkerhetskopi før oppdatering.

@@ -18,14 +18,28 @@ function getBowl(){return data.bowls.find(b=>b.id===$('bowl').value)}
 function updateForm(){let b=getBowl(),s=b&&data.sessions[b.id],action=$('action').value,has=!!s;
  $('sessionInfo').textContent=!b?'Velg en skål':has?`${b.name}: Aktiv måleperiode fra ${s.time.replace('T',' ')}. Siste referansevekt: ${fmt(s.weight)} g. Tomvekt: ${fmt(b.tare)} g.`:`${b.name}: Ingen aktiv måleperiode. Registrer startvekt med vann for å starte.`;
  $('currentWrap').hidden=!has||action==='reset';$('newWrap').hidden=action==='check';
- $('newWrap').querySelector('label').textContent=has?'Totalvekt etter vannbytte/etterfylling (g)':'Startvekt skål + vann (g)';
+ updateNewMode();
  if(!has){$('action').disabled=true;$('current').value='';$('calculation').textContent='Første registrering: vei skålen med vann og lagre startvekten. Dette registreres ikke som drukket vann.'}else{$('action').disabled=false;calc()}}
+function updateNewMode(){
+ const b=getBowl(),mode=$('newMode').value;
+ $('newWeightLabel').textContent=mode==='water'?'Vannmengde (ml)':'Totalvekt (skål + vann, g)';
+ $('newWeight').placeholder=mode==='water'?'f.eks. 500':'f.eks. 750';
+ $('newWeightHint').textContent=mode==='water'?`Skålens tomvekt (${b?fmt(b.tare):'–'} g) legges automatisk til.`:'Oppgi vekten du leser av med skålen og vannet samlet.';
+}
+function newTotal(b){
+ if($('newWeight').value.trim()==='')throw Error($('newMode').value==='water'?'Fyll inn vannmengde (ml)':'Fyll inn ny totalvekt (g)');
+ const v=grams($('newWeight').value);
+ if(!Number.isFinite(v)||v<0)throw Error('Oppgi en gyldig verdi på 0 eller mer');
+ const total=$('newMode').value==='water'?b.tare+v:v;
+ if(total<b.tare)throw Error('Totalvekten kan ikke være mindre enn skålens tomvekt');
+ return total;
+}
 function readMeasurement(){let b=getBowl();if(!b)throw Error('Velg skål');let when=$('when').value;if(!when||!Number.isFinite(Date.parse(when)))throw Error('Velg dato og klokkeslett');if(new Date(when)>new Date(Date.now()+60000))throw Error('Tidspunkt kan ikke være i fremtiden');let s=data.sessions[b.id],action=s?$('action').value:'start';if(s&&when<=s.time)throw Error('Tidspunkt må være etter forrige registrering');let current=null,next=null,drunk=0;
  if(s&&action!=='reset'){if($('current').value.trim()==='')throw Error('Fyll inn vekt før handling');current=grams($('current').value);if(!Number.isFinite(current)||current<b.tare)throw Error('Vekten kan ikke være mindre enn tomvekten');drunk=s.weight-current;if(drunk<0)throw Error('Vekten har økt siden sist. Bruk «Start ny måleperiode» dersom vann er fylt på uten registrering.');}
- if(action!=='check'){if($('newWeight').value.trim()==='')throw Error('Fyll inn ny totalvekt');next=grams($('newWeight').value);if(!Number.isFinite(next)||next<b.tare)throw Error('Ny vekt kan ikke være mindre enn tomvekten');}
+ if(action!=='check'){next=newTotal(b);}
  return {b,s,when,action,current,next,drunk};}
-function calc(){try{let m=readMeasurement();if(!m.s){$('calculation').textContent=`Startvann: ${fmt(m.next-m.b.tare)} ml. Ingen vanninntak registreres.`;return}if(m.action==='reset'){$('calculation').textContent='Forrige periode avsluttes uten registrering av vanninntak. Ny referansevekt lagres.';return}let e=data.margin+m.drunk*data.marginPct/100;$('calculation').textContent=`Forsvunnet vann: ${fmt(m.drunk)} ml · Feilmargin ±${fmt(e)} ml · Intervall ${fmt(Math.max(0,m.drunk-e))}–${fmt(m.drunk+e)} ml.`}catch(e){$('calculation').textContent=e.message}}
-['bowl','action'].forEach(id=>$(id).addEventListener('change',updateForm));['when','current','newWeight'].forEach(id=>$(id).addEventListener('input',calc));
+function calc(){try{let m=readMeasurement();if(!m.s){$('calculation').textContent=`Startvann: ${fmt(m.next-m.b.tare)} ml · Totalvekt: ${fmt(m.next)} g (skål ${fmt(m.b.tare)} g). Ingen vanninntak registreres.`;return}if(m.action==='reset'){$('calculation').textContent=`Forrige periode avsluttes uten vanninntak. Ny startmengde: ${fmt(m.next-m.b.tare)} ml · Totalvekt: ${fmt(m.next)} g.`;return}let e=data.margin+m.drunk*data.marginPct/100;$('calculation').textContent=`Forsvunnet vann: ${fmt(m.drunk)} ml · Feilmargin ±${fmt(e)} ml · Intervall ${fmt(Math.max(0,m.drunk-e))}–${fmt(m.drunk+e)} ml.`+(m.next!==null?` Ny vannmengde: ${fmt(m.next-m.b.tare)} ml · Ny totalvekt: ${fmt(m.next)} g.`:'')}catch(e){$('calculation').textContent=e.message}}
+['bowl','action'].forEach(id=>$(id).addEventListener('change',updateForm));$('newMode').addEventListener('change',()=>{updateNewMode();calc()});['when','current','newWeight'].forEach(id=>$(id).addEventListener('input',calc));
 $('save').onclick=()=>{try{let m=readMeasurement();if(m.s&&m.action==='reset'&&!confirm('Avslutte måleperioden uten å beregne vanninntak?'))return;
  if(m.s&&m.action!=='reset'){data.records.push({id:Date.now()+'-'+Math.random().toString(36).slice(2),b:m.b.id,bowlName:m.b.name,start:m.s.time,end:m.when,initial:Math.max(0,m.s.weight-m.b.tare),final:m.current,tare:m.b.tare,rest:Math.max(0,m.current-m.b.tare),drunk:m.drunk,margin:data.margin,marginPct:data.marginPct,action:m.action})}
  data.sessions[m.b.id]={weight:m.action==='check'?m.current:m.next,time:m.when};persist();render();$('when').value=localTime();$('current').value='';$('newWeight').value='';updateForm();alert(m.action==='start'?'Startmåling lagret':m.action==='reset'?'Ny måleperiode startet':'Registrering lagret')
