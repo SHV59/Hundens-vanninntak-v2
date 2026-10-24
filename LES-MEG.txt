@@ -1,4 +1,4 @@
-Hundens vanninntak v6.2
-Last opp alle filene direkte i rotmappen på GitHub Pages (erstatt eksisterende).
-Sikkerhetskopier data med JSON-eksport før oppdatering. Eksisterende localStorage-nøkkel er beholdt.
-NB: Nettleserens native datovelger kan fortsatt vise datoformat basert på enhetens språk.
+Hundens vanninntak v6.6
+Nytt: dagsnotater, måleperiodearkiv og konservativ vurdering av 24-timers inntak.
+Viktig: ta JSON-sikkerhetskopi før oppdatering. Eksisterende historikk lagres fortsatt under samme localStorage-nøkkel.
+Begrensning: gamle målinger har ikke full periodetilknytning; PDF-utskrift av perioder bruker datofilter og kan derfor også vise andre målinger på samme dato. Korrigering av historiske målinger er ikke implementert.
