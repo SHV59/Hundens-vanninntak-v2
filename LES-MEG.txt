@@ -1,4 +1,2 @@
-Hundens vanninntak v6.6
-Nytt: dagsnotater, måleperiodearkiv og konservativ vurdering av 24-timers inntak.
-Viktig: ta JSON-sikkerhetskopi før oppdatering. Eksisterende historikk lagres fortsatt under samme localStorage-nøkkel.
-Begrensning: gamle målinger har ikke full periodetilknytning; PDF-utskrift av perioder bruker datofilter og kan derfor også vise andre målinger på samme dato. Korrigering av historiske målinger er ikke implementert.
+Hundens vanninntak v6.7
+Ny egen fane for måleperioder. Åpne en periode med «Vis rapport / Skriv ut». Rapporten filtreres på periode-ID. Tidligere data beholdes i nettleseren. Ta JSON-sikkerhetskopi før oppdatering. Last opp alle filene til GitHub Pages.
