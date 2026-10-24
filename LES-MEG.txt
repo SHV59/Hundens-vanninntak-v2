@@ -1,4 +1,4 @@
-Hundens vanninntak PWA v6.1
-Last opp ALLE filene i rotmappen på GitHub Pages og erstatt eksisterende filer.
-Nyhet: velg vannmengde (ml) eller totalvekt (g) ved oppstart, vannbytte, etterfylling og ny måleperiode.
-Eksisterende lokal lagring beholdes på samme nettadresse. Ta CSV-sikkerhetskopi før oppdatering.
+Hundens vanninntak v6.2
+Last opp alle filene direkte i rotmappen på GitHub Pages (erstatt eksisterende).
+Sikkerhetskopier data med JSON-eksport før oppdatering. Eksisterende localStorage-nøkkel er beholdt.
+NB: Nettleserens native datovelger kan fortsatt vise datoformat basert på enhetens språk.
