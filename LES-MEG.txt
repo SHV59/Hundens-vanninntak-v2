@@ -1,2 +1,1 @@
-Hundens vanninntak v6.7
-Ny egen fane for måleperioder. Åpne en periode med «Vis rapport / Skriv ut». Rapporten filtreres på periode-ID. Tidligere data beholdes i nettleseren. Ta JSON-sikkerhetskopi før oppdatering. Last opp alle filene til GitHub Pages.
+v6.9: Rett sluttvekt i historikken; oppdaterer beregnet vanninntak, oversikt og kontrollkjede. Forenklet tekst for restvekt. Data lagres lokalt. Eksporter JSON-sikkerhetskopi før oppdatering og før større rettelser. Flere brukere/skysynkronisering er ikke inkludert.

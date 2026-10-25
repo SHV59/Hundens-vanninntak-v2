@@ -22,12 +22,12 @@ function updateForm(){let b=getBowl(),s=b&&data.sessions[b.id],action=$('action'
  if(!has){$('action').disabled=true;$('current').value='';$('calculation').textContent='Første registrering: vei skålen med vann og lagre startvekten. Dette registreres ikke som drukket vann.'}else{$('action').disabled=false;calc()}}
 function updateNewMode(){
  const b=getBowl(),mode=$('newMode').value;
- $('newWeightLabel').textContent=mode==='water'?'Vannmengde (ml)':'Totalvekt (skål + vann, g)';
+ $('newWeightLabel').textContent=mode==='water'?'Hvor mye vann fylte du på? (ml)':'Hva viser vekten med skål og vann? (g)';
  $('newWeight').placeholder=mode==='water'?'f.eks. 500':'f.eks. 750';
- $('newWeightHint').textContent=mode==='water'?`Skålens tomvekt (${b?fmt(b.tare):'–'} g) legges automatisk til.`:'Oppgi vekten du leser av med skålen og vannet samlet.';
+ $('newWeightHint').textContent=mode==='water'?`Skriv bare mengden vann du fylte på. Skålens egenvekt (${b?fmt(b.tare):'–'} g) regner appen med selv.`:'Skriv inn tallet du leser på vekten. Skålens vekt er allerede med.';
 }
 function newTotal(b){
- if($('newWeight').value.trim()==='')throw Error($('newMode').value==='water'?'Fyll inn vannmengde (ml)':'Fyll inn ny totalvekt (g)');
+ if($('newWeight').value.trim()==='')throw Error($('newMode').value==='water'?'Skriv inn hvor mye vann du fylte på (ml)':'Skriv inn vekten av skål med vann (g)');
  const v=grams($('newWeight').value);
  if(!Number.isFinite(v)||v<0)throw Error('Oppgi en gyldig verdi på 0 eller mer');
  const total=$('newMode').value==='water'?b.tare+v:v;
@@ -40,14 +40,14 @@ function readMeasurement(){let b=getBowl();if(!b)throw Error('Velg skål');let w
  return {b,s,when,action,current,next,drunk};}
 function calc(){try{let m=readMeasurement();if(!m.s){$('calculation').textContent=`Startvann: ${fmt(m.next-m.b.tare)} ml · Totalvekt: ${fmt(m.next)} g (skål ${fmt(m.b.tare)} g). Ingen vanninntak registreres.`;return}if(m.action==='reset'){$('calculation').textContent=`Forrige periode avsluttes uten vanninntak. Ny startmengde: ${fmt(m.next-m.b.tare)} ml · Totalvekt: ${fmt(m.next)} g.`;return}let e=data.margin+m.drunk*data.marginPct/100;$('calculation').textContent=`Forsvunnet vann: ${fmt(m.drunk)} ml · Feilmargin ±${fmt(e)} ml · Mulig vanninntak ${fmt(Math.max(0,m.drunk-e))}–${fmt(m.drunk+e)} ml.`+(m.next!==null?` Ny vannmengde: ${fmt(m.next-m.b.tare)} ml · Ny totalvekt: ${fmt(m.next)} g.`:'')}catch(e){$('calculation').textContent=e.message}}
 ['bowl','action'].forEach(id=>$(id).addEventListener('change',updateForm));$('newMode').addEventListener('change',()=>{updateNewMode();calc()});['when','current','newWeight'].forEach(id=>$(id).addEventListener('input',calc));
-$('save').onclick=()=>{try{let m=readMeasurement();if(m.s&&m.action==='reset'&&!confirm('Avslutte måleperioden uten å beregne vanninntak?'))return;
+$('save').onclick=()=>{try{let m=readMeasurement();if(m.s&&m.action==='reset'&&!confirm('Avslutte måleperioden uten å beregne vanninntak?'))return;if(m.s&&m.action!=='reset'){const note=`Kontroller tallene før lagring:\n\nSkålens egenvekt: ${fmt(m.b.tare)} g\nSkål med vann som er igjen: ${fmt(m.current)} g\nBeregnet vanninntak: ${fmt(m.drunk)} ml\n${m.next!==null?'Ny totalvekt med skål: '+fmt(m.next)+' g':''}`;if(m.drunk>Math.max(250,m.s.weight*0.6)&&!confirm('Uvanlig stor endring.\n'+note))return;}
  if(m.s&&m.action!=='reset'){data.records.push({id:Date.now()+'-'+Math.random().toString(36).slice(2),b:m.b.id,bowlName:m.b.name,start:m.s.time,end:m.when,initial:Math.max(0,m.s.weight-m.b.tare),final:m.current,tare:m.b.tare,rest:Math.max(0,m.current-m.b.tare),drunk:m.drunk,margin:data.margin,marginPct:data.marginPct,action:m.action,note:'',periodId:m.s.periodId||'legacy'})}
  if(!m.s||m.action==='reset')activePeriodId();data.sessions[m.b.id]={weight:m.action==='check'?m.current:m.next,time:m.when,periodId:(m.action==='reset'||!m.s)?activePeriodId():m.s.periodId||'legacy'};persist();render();$('when').value=localTime();$('current').value='';$('newWeight').value='';updateForm();notice(m.action==='start'?'Startmåling lagret':m.action==='reset'?'Ny måleperiode startet':'Registrering lagret')
  }catch(e){alert(e.message)}};
 let reportPeriodId=null;let savedReportDates=null;
 function filtered(){return data.records.filter(r=>(reportPeriodId===null||r.periodId===reportPeriodId)&&(!$('from').value||r.end.slice(0,10)>=$('from').value)&&(!$('to').value||r.end.slice(0,10)<=$('to').value)).sort((a,b)=>b.end.localeCompare(a.end))}function drawChart(list){const svg=$('chart'),NS='http://www.w3.org/2000/svg';svg.replaceChildren();const add=(tag,attrs,content)=>{let e=document.createElementNS(NS,tag);for(let [k,v] of Object.entries(attrs))e.setAttribute(k,v);if(content!==undefined)e.textContent=content;svg.append(e);return e};const days=new Map();for(const r of list){const k=r.end.slice(0,10);let d=days.get(k)||{date:k,value:0,lo:0,hi:0};d.value+=r.drunk;d.lo+=Math.max(0,r.drunk-err(r));d.hi+=r.drunk+err(r);days.set(k,d)}const pts=[...days.values()].sort((a,b)=>a.date.localeCompare(b.date));if(!pts.length){add('text',{x:360,y:140,'text-anchor':'middle',fill:'#587272','font-size':17},'Ingen registreringer i valgt periode');return}const L=64,R=24,T=24,B=58,W=720,H=280,max=Math.max(1,...pts.map(p=>p.hi))*1.1;const x=i=>L+(pts.length===1?(W-L-R)/2:i*(W-L-R)/(pts.length-1));const y=v=>H-B-v/max*(H-T-B);for(let i=0;i<=4;i++){let val=max*i/4;add('line',{x1:L,y1:y(val),x2:W-R,y2:y(val),stroke:'#dbe9e6'});add('text',{x:L-8,y:y(val)+4,'text-anchor':'end',fill:'#587272','font-size':12},fmt(val))}if(pts.length>1){add('polygon',{points:[...pts.map((p,i)=>`${x(i)},${y(p.hi)}`),...pts.slice().reverse().map((p,i)=>`${x(pts.length-1-i)},${y(p.lo)}`)].join(' '),fill:'#b5dcd8',opacity:'.65'});add('polyline',{points:pts.map((p,i)=>`${x(i)},${y(p.value)}`).join(' '),fill:'none',stroke:'#126b70','stroke-width':3,'stroke-linejoin':'round'})}pts.forEach((p,i)=>{let cx=x(i);add('line',{x1:cx,y1:y(p.lo),x2:cx,y2:y(p.hi),stroke:'#72aaa5','stroke-width':2});let dot=add('circle',{cx,cy:y(p.value),r:5,fill:'#126b70'});let title=document.createElementNS(NS,'title');title.textContent=`${dateNO(p.date)}: ${fmt(p.value)} ml (${fmt(p.lo)}–${fmt(p.hi)} ml)`;dot.append(title);if(pts.length<=12||i%Math.ceil(pts.length/12)===0||i===pts.length-1)add('text',{x:cx,y:H-B+23,'text-anchor':'middle',fill:'#587272','font-size':pts.length>8?10:12},p.date.slice(8)+'.'+p.date.slice(5,7))});add('text',{x:16,y:14,fill:'#587272','font-size':12},'ml');}function render(){let list=filtered(),sum=list.reduce((a,r)=>a+r.drunk,0);let lower=list.reduce((a,r)=>a+Math.max(0,r.drunk-err(r)),0),upper=list.reduce((a,r)=>a+r.drunk+err(r),0);let days=new Set(list.map(r=>r.end.slice(0,10))).size;let avg=days?sum/days:0;let avgKg=data.kg&&Number(data.kg)>0?avg/Number(data.kg):null;// Klinisk veiledende nivåer, ikke diagnostiske grenser. Døgnsum er basert på sluttdato.
 renderWaterAlerts(list);
-$('summary').innerHTML=`<strong class="big">${fmt(sum)} ml</strong> totalt (feilmargin: mulig ${fmt(lower)}–${fmt(upper)} ml) i valgt periode (${list.length} målinger, ${days} registreringsdager). <br><strong>Gjennomsnitt per registreringsdag: ${fmt(avg)} ml/dag</strong>${avgKg!==null?` (${fmt(avgKg)} ml/kg/dag)`:``}. ${data.kg?`Totalt ${fmt(sum/data.kg)} ml/kg. `:''}<br><span class="muted">Gjennomsnittet gjelder bare dager med avsluttede målinger, ikke nødvendigvis hele døgn. Målinger som krysser midnatt føres på sluttdatoen; dager uten registreringer teller ikke som 0 ml.</span>`;drawChart(list);let body=$('rows');body.replaceChildren();for(let r of list){let tr=document.createElement('tr');[dateNO(r.end),r.bowlName||('Skål '+(Number(r.b)+1)),fmt(r.initial)+' ml',fmt(r.rest)+' ml',fmt(r.drunk)+' ml',`${fmt(Math.max(0,r.drunk-err(r)))}–${fmt(r.drunk+err(r))} ml`,(data.dailyNotes||{})[r.end.slice(0,10)]||r.note||'–'].forEach(s=>{let td=document.createElement('td');td.textContent=s;tr.append(td)});let td=document.createElement('td');td.className='no-print';let btn=document.createElement('button');btn.className='danger';btn.textContent='Slett';btn.onclick=()=>{if(confirm('Slette denne målingen?')){data.records=data.records.filter(x=>x.id!==r.id);persist();render()}};td.append(btn);tr.append(td);body.append(tr)}renderPeriods();renderDiaryHistory()}$('from').onchange=render;$('to').onchange=render;$('pdf').onclick=()=>{document.title=`Vanninntak ${data.dog||'hund'} ${$('from').value||'alle'}-${$('to').value||'alle'}`;window.print()};$('csv').onclick=()=>{let rows=[['Hund','Vekt kg','Skål','Start','Slutt','Tomvekt g','Start ml','Sluttvekt g','Rest ml','Drukket ml','Fast feilmargin ± ml','Feilmargin ± %','Samlet feilmargin ± ml','Minimum ml','Maksimum ml','Notat'],...filtered().map(r=>[data.dog,data.kg,r.bowlName||('Skål '+(Number(r.b)+1)),r.start,r.end,r.tare,r.initial,r.final,r.rest,r.drunk,r.margin||0,r.marginPct||0,err(r),Math.max(0,r.drunk-err(r)),r.drunk+err(r),(data.dailyNotes||{})[r.end.slice(0,10)]||r.note||''])];let csv='\ufeff'+rows.map(row=>row.map(x=>'"'+String(x??'').replaceAll('"','""')+'"').join(';')).join('\r\n');let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download='vanninntak.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};$('clear').onclick=()=>{if(confirm('Slette ALLE lagrede målinger? Dette kan ikke angres.')){data.records=[];persist();render()}};
+$('summary').innerHTML=`<strong class="big">${fmt(sum)} ml</strong> totalt (feilmargin: mulig ${fmt(lower)}–${fmt(upper)} ml) i valgt periode (${list.length} målinger, ${days} registreringsdager). <br><strong>Gjennomsnitt per registreringsdag: ${fmt(avg)} ml/dag</strong>${avgKg!==null?` (${fmt(avgKg)} ml/kg/dag)`:``}. ${data.kg?`Totalt ${fmt(sum/data.kg)} ml/kg. `:''}<br><span class="muted">Gjennomsnittet gjelder bare dager med avsluttede målinger, ikke nødvendigvis hele døgn. Målinger som krysser midnatt føres på sluttdatoen; dager uten registreringer teller ikke som 0 ml.</span>`;drawChart(list);let body=$('rows');body.replaceChildren();for(let r of list){let tr=document.createElement('tr');[dateNO(r.end),r.bowlName||('Skål '+(Number(r.b)+1)),fmt(r.initial)+' ml',fmt(r.rest)+' ml',fmt(r.drunk)+' ml',`${fmt(Math.max(0,r.drunk-err(r)))}–${fmt(r.drunk+err(r))} ml`,(data.dailyNotes||{})[r.end.slice(0,10)]||r.note||'–'].forEach(s=>{let td=document.createElement('td');td.textContent=s;tr.append(td)});let td=document.createElement('td');td.className='no-print';let edit=document.createElement('button');edit.className='secondary';edit.textContent='Rett';edit.onclick=()=>openEdit(r.id);td.append(edit);let btn=document.createElement('button');btn.className='danger';btn.textContent='Slett';btn.onclick=()=>{if(confirm('Slette denne målingen?')){data.records=data.records.filter(x=>x.id!==r.id);persist();render()}};td.append(btn);tr.append(td);body.append(tr)}renderPeriods();renderDiaryHistory()}$('from').onchange=render;$('to').onchange=render;$('pdf').onclick=()=>{document.title=`Vanninntak ${data.dog||'hund'} ${$('from').value||'alle'}-${$('to').value||'alle'}`;window.print()};$('csv').onclick=()=>{let rows=[['Hund','Vekt kg','Skål','Start','Slutt','Tomvekt g','Start ml','Sluttvekt g','Rest ml','Drukket ml','Fast feilmargin ± ml','Feilmargin ± %','Samlet feilmargin ± ml','Minimum ml','Maksimum ml','Notat'],...filtered().map(r=>[data.dog,data.kg,r.bowlName||('Skål '+(Number(r.b)+1)),r.start,r.end,r.tare,r.initial,r.final,r.rest,r.drunk,r.margin||0,r.marginPct||0,err(r),Math.max(0,r.drunk-err(r)),r.drunk+err(r),(data.dailyNotes||{})[r.end.slice(0,10)]||r.note||''])];let csv='\ufeff'+rows.map(row=>row.map(x=>'"'+String(x??'').replaceAll('"','""')+'"').join(';')).join('\r\n');let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download='vanninntak.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};$('clear').onclick=()=>{if(confirm('Slette ALLE lagrede målinger? Dette kan ikke angres.')){data.records=[];persist();render()}};
 // Versjon 6.2: Norsk datoformat i visning, behold ISO internt.
 function dateNO(value){if(!value)return '–';const s=String(value);const m=s.match(/^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?/);return m?`${m[3]}.${m[2]}.${m[1]}${m[4]?' kl. '+m[4]+':'+m[5]:''}`:s;}
 function notice(message,warning=false){const el=$('feedback');el.textContent=message;el.className='notice no-print'+(warning?' warn':'');el.hidden=false;clearTimeout(window.__noticeTimer);window.__noticeTimer=setTimeout(()=>{el.hidden=true},6500)}
@@ -109,3 +109,44 @@ if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js').catch
 
 // Periodevisning kan avsluttes uten å endre eller slette målinger.
 $('closePeriodReport').onclick=()=>{reportPeriodId=null;if(savedReportDates){$('from').value=savedReportDates[0];$('to').value=savedReportDates[1];savedReportDates=null}$('periodReportBar').hidden=true;render();showTab('periods')};
+
+
+// v6.9: Rett historisk sluttvekt uten å slette måleperioden.
+let editId=null;
+function openEdit(id){
+ const r=data.records.find(x=>x.id===id);if(!r)return;
+ editId=id;
+ $('editInfo').textContent=`${r.bowlName||'Skål'} · ${dateNO(r.end)} · Startvekt ${fmt(Number(r.initial)+Number(r.tare))} g · Skålens egenvekt ${fmt(r.tare)} g.`;
+ $('editFinal').value=r.final;
+ updateEditPreview();
+ $('editDialog').showModal();
+}
+function updateEditPreview(){
+ const r=data.records.find(x=>x.id===editId);if(!r)return;
+ const v=grams($('editFinal').value);
+ const start=Number(r.initial)+Number(r.tare);
+ $('editPreview').textContent=Number.isFinite(v)&&v>=Number(r.tare)&&v<=start
+   ?`Korrigert beregnet vanninntak: ${fmt(start-v)} ml (tidligere ${fmt(r.drunk)} ml).`
+   :'Kontroller at vekten inkluderer skålen og ikke er større enn startvekten.';
+}
+$('editFinal').addEventListener('input',updateEditPreview);
+$('editCancel').onclick=()=>$('editDialog').close();
+$('editConfirm').onclick=()=>{
+ const r=data.records.find(x=>x.id===editId);if(!r)return;
+ const v=grams($('editFinal').value),tare=Number(r.tare),start=Number(r.initial)+tare;
+ if(!Number.isFinite(v)||v<tare||v>start)return alert('Vekten må være mellom skålens egenvekt og startvekten.');
+ const delta=start-v;
+ // Ved ren kontroll blir sluttvekten også neste startvekt.
+ const next=data.records.filter(x=>x.b===r.b&&x.start===r.end).sort((a,b)=>a.end.localeCompare(b.end))[0];
+ if(r.action==='check'&&next){
+   if(!confirm('Denne kontrollmålingen er også startpunkt for neste måling. Begge beregningene vil bli oppdatert. Fortsette?'))return;
+   if(v<Number(next.final))return alert('Rettelsen ville gi negativt vanninntak ved neste måling. Kontroller målingene.');
+ }
+ if(!confirm(`Endre målingen fra ${fmt(r.drunk)} ml til ${fmt(delta)} ml? Ta gjerne sikkerhetskopi før du fortsetter.`))return;
+ r.final=v;r.rest=v-tare;r.drunk=delta;
+ if(r.action==='check'){
+   if(next){next.initial=v-tare;next.drunk=v-Number(next.final);}
+   else if(data.sessions[r.b]&&data.sessions[r.b].time===r.end)data.sessions[r.b].weight=v;
+ }
+ persist();$('editDialog').close();render();updateForm();notice('Målingen er korrigert. Oversikten er oppdatert.');
+};
