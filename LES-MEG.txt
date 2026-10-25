@@ -1,1 +1,1 @@
-v6.9: Rett sluttvekt i historikken; oppdaterer beregnet vanninntak, oversikt og kontrollkjede. Forenklet tekst for restvekt. Data lagres lokalt. Eksporter JSON-sikkerhetskopi før oppdatering og før større rettelser. Flere brukere/skysynkronisering er ikke inkludert.
+v7.0: Enhetlig veiing før og etter vannbytte. Standard: totalvekt skål + vann. Alternativ i Innstillinger: nullstilt (TARE) skål. Appen trekker fra skålvekten automatisk og lagrer interne totalvekter som før. Ingen skytjenester. Ta JSON-sikkerhetskopi før oppdatering.
