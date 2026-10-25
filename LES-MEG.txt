@@ -1,1 +1,3 @@
 Hundens vanninntak v7.1. Én veiemetode: totalvekt av skål og vann på vekt som viser 0 g før skålen settes på. Vann i skål = totalvekt minus fast skålvekt. Forbruk = forrige totalvekt minus totalvekt før handling. Etter vannbytte/etterfylling blir ny totalvekt neste startvekt. Endring av skålvekt sperres under aktiv måleperiode. Eksporter JSON-sikkerhetskopi før oppdatering. Eksisterende data beholdes i samme nettleser på samme nettadresse. Ingen konto/skylagring.
+
+Versjon 7.2: Graf med løpende gjennomsnitt ml/24 t, oppdateres etter hver fullførte måling. Overlappende skålers måletid telles én gang.
